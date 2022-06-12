@@ -25,7 +25,6 @@ bot.onText(/\/symbol (.+)/, (msg, match) => {
     // of the message
     const chatId = msg.chat.id;
     const symbol = match[1]; // captured user input 
-    order.push(symbol)
     order.symbol = symbol
 });
 
@@ -71,8 +70,8 @@ bot.on('message', (msg) => {
     if(msg.text.toString().toLowerCase() == '/help'){
         let help_message = `
         -> FTX Order Execution
-    Send a message with the following 5 parameters followed by a comma to execute an order using the FTX API:
-        1) symbol     ex: BTC-PER
+    Send a message with the following 5 parameters to execute an order using the FTX API:
+        1) symbol     ex: BTC-PERP
         2) type       ex: limit or market 
         3) side       ex: buy or sell
         4) amount     ex: 0.0003 ($10 -> 0.0003BTC)
@@ -87,46 +86,44 @@ bot.on('message', (msg) => {
         bot.sendMessage(msg.chat.id, help_message)
     }
 
+
     if(msg.text.toString().toLowerCase() == '/print'){
         console.log('Printing order...')
-        console.log(order)
+        symbol = `symbol: ${order.symbol}`
+        type = `type: ${order.type}`
+        side = `side: ${order.side}`
+        amount = `amount: ${order.amount}`
+        price = `price : ${order.price}`
+        reduceOnly = `reduceOnly: ${order.reduceOnly}`
 
-
-        aa = order.symbol
-        bot.sendMessage(msg.chat.id, aa)
+        bot.sendMessage(msg.chat.id, `----> Current order <-----`)
+        bot.sendMessage(msg.chat.id, symbol)
+        bot.sendMessage(msg.chat.id, type)
+        bot.sendMessage(msg.chat.id, side)
+        bot.sendMessage(msg.chat.id, amount)
+        bot.sendMessage(msg.chat.id, price)
+        bot.sendMessage(msg.chat.id, reduceOnly)
     }
 
 
     if(msg.text.includes('/execute')){
+        symbol = order.symbol
+        type = order.type
+        side = order.side
+        amount = order.amount
+        price = order.price
+        reduceOnly = order.reduceOnly
 
-        symbol = order.symbol;
-        type = order.type;
-        side = order.side;
-        amount = order.amount;
-        price = order.price;
-        reduce = order.reduce
-        print(symbol)
-        //main()
-
+        bot.sendMessage(msg.chat.id, "Executing order...")
+        
+        executeOrder(symbol, type, side, amount, price, reduceOnly)    
     }
 
 })
 
 
 
-async function main() {
-    let bids = 'bids';
-    // let asks = 'asks';
-
-    let symbol = "BTC-PERP";
-    let type = "limit"
-    let side = "sell";
-    let amount = 0.0003; // -> $10 at 11/06/2022
-    let reduceOnly = true // false: open order, true: close order
-
-    price = await Data.getPrice(symbol, bids)
-    console.log(`${symbol}: ${price}`)
-
+async function executeOrder(symbol, type, side, amount, price, reduceOnly) {
     tx = await Trade.executeTransaction(symbol, type, side, amount, price, reduceOnly);
     console.log(`Order filled:
     -> market: ${tx.info.market}

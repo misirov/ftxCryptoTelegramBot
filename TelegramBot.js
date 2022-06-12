@@ -1,15 +1,73 @@
 require('dotenv').config();
-const { arrayify } = require('ethers/lib/utils');
 const TelegramBot = require('node-telegram-bot-api');
+const ccxt = require('ccxt');
+const Data = require("./Data");
+const Trade = require("./Trade");
 
 const token = process.env.TG_TOKEN;
-
 const bot = new TelegramBot(token, {polling:true});
 
+order = {
+    symbol: "",
+    type: "",
+    side: "",
+    amount: "",
+    price: "",
+    reduce: ""
+
+}
+
+console.log('Starting bot...')
+
+bot.onText(/\/symbol (.+)/, (msg, match) => {
+    // 'msg' is the received Message from Telegram
+    // 'match' is the result of executing the regexp above on the text content
+    // of the message
+    const chatId = msg.chat.id;
+    const symbol = match[1]; // captured user input 
+    order.push(symbol)
+    order.symbol = symbol
+});
+
+
+bot.onText(/\/type (.+)/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const type = match[1];
+    order.type = type;
+});
+
+
+bot.onText(/\/side (.+)/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const side = match[1];
+    order.side = side;
+});
+
+
+bot.onText(/\/amount (.+)/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const amount = match[1];
+    order.amount = amount;
+});
+
+
+bot.onText(/\/price (.+)/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const price = match[1];
+    order.price = price;
+});
+
+
+bot.onText(/\/reduce (.+)/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const reduce = match[1];
+    order.reduce = reduce;
+});
+
+
+
+
 bot.on('message', (msg) => {
-
-    var array = []
-
     if(msg.text.toString().toLowerCase() == '/help'){
         let help_message = `
         -> FTX Order Execution
@@ -22,37 +80,61 @@ bot.on('message', (msg) => {
         6) reduceOnly ex: true or false
 
         Ex: BTC-PERP,market,buy,0.0003,false
+
+        --> print
+        Use /print to print the current order
         `
         bot.sendMessage(msg.chat.id, help_message)
     }
 
+    if(msg.text.toString().toLowerCase() == '/print'){
+        console.log('Printing order...')
+        console.log(order)
 
-    if(msg.text.includes('/limit')){
-        order_type = 'limit'
-    } 
-    else if(msg.text.includes('/market')){
-        order_type = 'market'
-    } 
-    array.push(order_type)
 
-    if(msg.text.includes('/buy')){
-        order_side = 'buy'
-    }
-    else if(msg.text.includes('/sell')){
-        order_side = 'sell'
-    }
-    array.push(order_side)
-
-    
-    for(i;i<array.length;i++){
-        console.log(`INPUT: ${array[i]}`)
+        aa = order.symbol
+        bot.sendMessage(msg.chat.id, aa)
     }
 
 
+    if(msg.text.includes('/execute')){
 
-    // if((msg.text.includes('limit') || msg.text.includes('market')) && (msg.text.includes('buy') || msg.text.includes('sell')) && (msg.text.includes('true') || msg.text.includes('false'))){
-        
-    // }
-  
+        symbol = order.symbol;
+        type = order.type;
+        side = order.side;
+        amount = order.amount;
+        price = order.price;
+        reduce = order.reduce
+        print(symbol)
+        //main()
+
+    }
 
 })
+
+
+
+async function main() {
+    let bids = 'bids';
+    // let asks = 'asks';
+
+    let symbol = "BTC-PERP";
+    let type = "limit"
+    let side = "sell";
+    let amount = 0.0003; // -> $10 at 11/06/2022
+    let reduceOnly = true // false: open order, true: close order
+
+    price = await Data.getPrice(symbol, bids)
+    console.log(`${symbol}: ${price}`)
+
+    tx = await Trade.executeTransaction(symbol, type, side, amount, price, reduceOnly);
+    console.log(`Order filled:
+    -> market: ${tx.info.market}
+    -> side: ${tx.side}
+    -> type: ${tx.type}
+    -> amount: ${tx.amount}
+    -> @price ${tx.price}
+    `)
+
+} 
+

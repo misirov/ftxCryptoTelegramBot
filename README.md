@@ -1,6 +1,6 @@
 # LazyQuant
 
-## Send orders via telegram
+## Send FTX orders via telegram
 ### Hacky saturday project. NFA, use at own risk.
 
 dependencies:
